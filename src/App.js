@@ -2,114 +2,109 @@ import React, { Component } from 'react';
 import './App.css';
 import Toolbar from './components/toolbar.js';
 import Messages from './components/messages.js';
-
-const messagesData = [
-  {
-    "id": 1,
-    "subject": "You can't input the protocol without calculating the mobile RSS protocol!",
-    "read": false,
-    "starred": true,
-    "labels": ["dev", "personal"]
-  },
-  {
-    "id": 2,
-    "subject": "connecting the system won't do anything, we need to input the mobile AI panel!",
-    "read": false,
-    "starred": false,
-    "selected": true,
-    "labels": []
-  },
-  {
-    "id": 3,
-    "subject": "Use the 1080p HTTP feed, then you can parse the cross-platform hard drive!",
-    "read": false,
-    "starred": true,
-    "labels": ["dev"]
-  },
-  {
-    "id": 4,
-    "subject": "We need to program the primary TCP hard drive!",
-    "read": true,
-    "starred": false,
-    "selected": true,
-    "labels": []
-  },
-  {
-    "id": 5,
-    "subject": "If we override the interface, we can get to the HTTP feed through the virtual EXE interface!",
-    "read": false,
-    "starred": false,
-    "labels": ["personal"]
-  },
-  {
-    "id": 6,
-    "subject": "We need to back up the wireless GB driver!",
-    "read": true,
-    "starred": true,
-    "labels": []
-  },
-  {
-    "id": 7,
-    "subject": "We need to index the mobile PCI bus!",
-    "read": true,
-    "starred": false,
-    "labels": ["dev", "personal"]
-  },
-  {
-    "id": 8,
-    "subject": "If we connect the sensor, we can get to the HDD port through the redundant IB firewall!",
-    "read": true,
-    "starred": true,
-    "labels": []
-  }
-]
+import ComposeForm from './components/compose.js'
 
 class App extends Component {
 
   constructor(props){
     super(props)
     this.state = {
-      messages : [...messagesData],
+      messages : [],
       allSelected: false,
       someSelected: true,
-      readCount: 4
+      readCount: 4,
+      showCompose: false
     }
   }
 
+  async componentDidMount(){
+    let response = await fetch('http://localhost:8082/api/messages')
+    let json = await response.json()
+    this.setState({messages: json})
+  }
+
+  showCompose = () => {
+    if(this.state.showCompose){
+      this.setState({showCompose: false})
+    }
+    else {
+      this.setState({showCompose: true})
+    }
+  }
+
+  compose = (e) => {
+    this.setState({[e.target.name]:e.target.value})
+  }
+
+  send = async (e) => {
+    e.preventDefault()
+
+    let newMessage = {
+      subject: this.state.subject,
+      body: this.state.body
+    }
+
+    let postMessage = await fetch('http://localhost:8082/api/messages',{
+      method: 'POST',
+      body: JSON.stringify(newMessage),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }
+    })
+
+    let message = await postMessage.json()
+
+    this.setState({messages: [...this.state.messages, message], showCompose: false})
+  }
+
+  update = async (idArr, command, prop, value) => {
+    let message = {
+      messageIds: idArr,
+      command: command,
+      [prop]: value
+    }
+
+    const updateMessages = await fetch('http://localhost:8082/api/messages', {
+      method: 'PATCH',
+      body: JSON.stringify(message),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }
+    })
+    let updatedMessages = await updateMessages.json()
+    this.setState({messages: updatedMessages})
+  }
+
+  expandMessage = (id) => {
+    console.log(id)
+  }
 
   star = (id) => {
-    const messages = this.state.messages
+    let update = this.update
+    let messages = this.state.messages
+    let selectedMessage = messages.filter(message => message.id === id)
+    let value
 
-    for(let i = 0; i < messages.length; i++){
-      if(messages[i].id === id){
-        if(messages[i].starred === true){
-          messages[i].starred = false
-        }
-        else {messages[i].starred = true}
-      }
-    }
+    if(selectedMessage.starred === true){
+      value = false
+    } else {value = true}
 
-    this.setState({messages: messages})
-    console.log('newState:', this.state)
+    update([id], "star", "starred", value)
   }
 
-
   select = (id) => {
-    this.setState({allSelected: false})
+    let update = this.update
     let messages = this.state.messages
+    let selectedMessage = messages.filter(message => message.id === id)
+    let value
 
-    for(let i = 0; i < messages.length; i++){
-      if(messages[i].id === id){
-        if(messages[i].selected === true){
-          messages[i].selected = false
-        }
-        else {
-          messages[i].selected = true
-        }
-      }
-    }
+    if(selectedMessage.selected === true){
+      value = false
+    } else {value = true}
 
-    this.setState({messages: messages})
+    update([id], "select", "selected", value)
 
     let selected = messages.filter(message => message.selected === true)
 
@@ -123,88 +118,96 @@ class App extends Component {
 
     if(selected.length === messages.length){
       this.setState({allSelected: true})
-      console.log(selected)
     }
   }
 
-
   selectAll = (e) => {
+    let update = this.update
     let messages = this.state.messages
+    let ids = []
+    let value
 
     if(this.state.allSelected === false){
-      messages.map(message => message.selected = true)
+      value = true
+      messages.map(message => ids.push(message.id))
       this.setState({allSelected: true, someSelected: true})
     }
 
     else {
-      messages.map(message => message.selected = false)
+      value = false
+      messages.map(message => ids.push(message.id))
       this.setState({allSelected: false, someSelected: false})
     }
+    update([...ids], "select", "selected", value)
   }
 
-  read = (e) => {
+  read = () => {
+    let update = this.update
     let messages = this.state.messages
-    let readMessages = messages.filter(message => message.selected)
-    readMessages.map(readMessage => readMessage.read = true)
+    let ids = []
+    let value = true
+    let selectedMessages = messages.filter(message => message.selected)
 
-    let read = messages.filter(message => message.read === false)
-    this.setState({messages: messages, readCount: read.length})
+    selectedMessages.map(message => ids.push(message.id))
+    // let unRead = messages.filter(message => message.read === false)
+    // this.setState({messages: messages, readCount: unRead.length})
+    update([...ids], "read", "read", value)
   }
 
   unread = () => {
+    let update = this.update
     let messages = this.state.messages
-    for(let i = 0; i < messages.length; i++){
-      if(messages[i].selected){
-        if(messages[i].read){
-          messages[i].read = false
-        }
-      }
-    }
-    let read = messages.filter(message => message.read === false)
-    this.setState({messages: messages, readCount: read.length})
+    let ids = []
+    let value = false
+    let selectedMessages = messages.filter(message => message.selected)
+
+    selectedMessages.map(message => ids.push(message.id))
+    // let unRead = messages.filter(message => message.read === false)
+    // this.setState({messages: messages, readCount: unRead.length})
+    update([...ids], "read", "read", value)
   }
 
   delete = () => {
+    let update = this.update
     let messages = this.state.messages
-    let notSelectedMessages = messages.filter(message => !message.selected)
-    messages = [...notSelectedMessages]
-    let read = messages.filter(message => message.read === false)
-    this.setState({messages: messages, readCount: read.length, someSelected: false, allSelected: false})
+    let ids = []
+    let selectedMessages = messages.filter(message => message.selected)
+
+    selectedMessages.map(message => ids.push(message.id))
+
+    this.setState({someSelected: false, allSelected: false})
+    update([...ids], "delete", null, null)
   }
 
   addLabel = (e) => {
+    let update = this.update
     let messages = this.state.messages
+    let ids = []
+    let value = e.target.value
     let selectedMessages = messages.filter(selectedMessage => selectedMessage.selected)
-    selectedMessages.map(selectedMessage => {
-      if(!selectedMessage.labels.includes(e.target.value)){
-        selectedMessage.labels.push(e.target.value)
-      }
-    })
-    this.setState({messages: messages})
+
+    selectedMessages.map(message => ids.push(message.id))
+    console.log(value)
+    update([...ids], "addLabel", "label", value)
   }
 
   removeLabel = (e) => {
+    let update = this.update
     let messages = this.state.messages
+    let ids = []
+    let value = e.target.value
     let selectedMessages = messages.filter(selectedMessage => selectedMessage.selected)
-    selectedMessages.map(selectedMessage => {
-      let labels = selectedMessage.labels
-      labels.map((label, index) => {
-        labels.splice(index, 1)
-      })
 
-      // if(selectedMessage.labels.includes(e.target.value)){
-      //   selectedMessage.map((label, index) => {
-      //     selectedMessage.labels.splice(index, 1)
-      //   })
-      // }
-    })
-    this.setState({messages: messages})
+    selectedMessages.map(message => ids.push(message.id))
+
+    update([...ids], "removeLabel", "label", value)
   }
 
   render() {
     return (
       <div className="container">
         <Toolbar
+          showCompose={this.showCompose}
           selectAll={this.selectAll}
           allSelected={this.state.allSelected}
           someSelected={this.state.someSelected}
@@ -213,12 +216,17 @@ class App extends Component {
           delete={this.delete}
           readCount={this.state.readCount}
           addLabel={this.addLabel}
-          removeLabel={this.removeLabel}/>
+          removeLabel={this.removeLabel}
+          update={this.update}/>
+        {this.state.showCompose ? <ComposeForm compose={this.compose} send={this.send}/> : <div></div>}
         <Messages
         read={this.isRead}
         messages={this.state.messages}
         select={this.select}
-        star={this.star}/>
+        star={this.star}
+        expandMessage={this.expandMessage}
+        update={this.update}
+        />
       </div>
     )
   }

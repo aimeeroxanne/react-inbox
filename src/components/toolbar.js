@@ -2,13 +2,16 @@ import React, { Component } from 'react';
 
 const Toolbar = (props) => {
   return (
-    <div className="App">
       <div className="row toolbar">
-        <div className="col-md-12">
+        <div className="col-lg-12">
           <p className="pull-right">
             <span className="badge badge">{`${props.readCount}`}</span>
             unread messages
           </p>
+
+          <button className="btn btn-danger" onClick={props.showCompose}>
+            <i className="fa fa-plus"></i>
+          </button>
 
           <button className="btn btn-default" onClick={props.selectAll}>
             <i className={
@@ -43,7 +46,6 @@ const Toolbar = (props) => {
           </button>
         </div>
       </div>
-    </div>
   )
 }
 

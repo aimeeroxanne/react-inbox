@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Message from './message.js'
+import MessageBody from './messageBody.js'
 
 const Messages = (props) => {
 

@@ -11,9 +11,8 @@ const Message = (props) => {
               onChange={() => props.select(props.id)}/>
           </div>
           <div className="col-xs-2">
-            <i className={`${props.starred ? 'star fa fa-star' : 'star fa fa-star-o'}`} onClick={()=>{
-              props.star(props.id)
-            }}></i>
+            <i className={`${props.starred ? 'star fa fa-star' : 'star fa fa-star-o'}`} value="star" onClick={() => props.star(props.id)
+            }></i>
           </div>
         </div>
       </div>
@@ -24,7 +23,7 @@ const Message = (props) => {
               key={index}
               label={label}/>)}
         </div>
-        <a href="#">{props.subject}
+        <a>{props.subject}
         </a>
       </div>
     </div>

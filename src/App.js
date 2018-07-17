@@ -11,7 +11,7 @@ class App extends Component {
     this.state = {
       messages : [],
       allSelected: false,
-      someSelected: true,
+      someSelected: false,
       readCount: 4,
       showCompose: false
     }
@@ -20,7 +20,17 @@ class App extends Component {
   async componentDidMount(){
     let response = await fetch('http://localhost:8082/api/messages')
     let json = await response.json()
-    this.setState({messages: json})
+    let selected = json.filter(message => message.selected)
+    let unRead = json.filter(message => !message.read)
+    if(selected.length === 0){
+      this.setState({messages: json, allSelected: false, someSelected: false, readCount: unRead.length})
+    }
+    else if(selected.length >= 1){
+      this.setState({messages: json, allSelected: false, someSelected: true, readCount: unRead.length})
+    }
+    if(selected.length === json.length){
+      this.setState({allSelected: true, someSelected: true, readCount: unRead.length})
+    }
   }
 
   showCompose = () => {
@@ -74,7 +84,17 @@ class App extends Component {
       }
     })
     let updatedMessages = await updateMessages.json()
-    this.setState({messages: updatedMessages})
+    let unRead = updatedMessages.filter(message => !message.read)
+    let selectedMessages = updatedMessages.filter(message => message.selected)
+
+    if(selectedMessages.length === 0){
+      this.setState({messages: updatedMessages, readCount: unRead.length, allSelected: false, someSelected: false})
+    }
+    else if (selectedMessages.length > 0 && selectedMessages.length < updatedMessages.length){
+      this.setState({messages: updatedMessages, readCount: unRead.length, allSelected: false, someSelected: true})
+    }
+    else{this.setState({messages: updatedMessages, readCount: unRead.length, allSelected: true, someSelected: true})}
+
   }
 
   expandMessage = (id) => {
@@ -105,40 +125,28 @@ class App extends Component {
     } else {value = true}
 
     update([id], "select", "selected", value)
-
-    let selected = messages.filter(message => message.selected === true)
-
-    if (selected.length === 0){
-      this.setState({allSelected:false, someSelected: false})
-    }
-
-    else if(selected.length >= 1){
-      this.setState({someSelected: true})
-    }
-
-    if(selected.length === messages.length){
-      this.setState({allSelected: true})
-    }
   }
 
   selectAll = (e) => {
     let update = this.update
     let messages = this.state.messages
+    let notSelected = messages.filter(message => !message.selected)
+    let selected = messages.filter(message => message.selected)
     let ids = []
-    let value
+    let value = true
 
     if(this.state.allSelected === false){
-      value = true
-      messages.map(message => ids.push(message.id))
-      this.setState({allSelected: true, someSelected: true})
+      notSelected.map(message => ids.push(message.id))
+        // this.setState({allSelected: true, someSelected: true})
     }
 
     else {
-      value = false
-      messages.map(message => ids.push(message.id))
-      this.setState({allSelected: false, someSelected: false})
+      selected.map(message => ids.push(message.id))
+      // this.setState({allSelected: false, someSelected: false})
     }
+
     update([...ids], "select", "selected", value)
+
   }
 
   read = () => {
@@ -162,8 +170,6 @@ class App extends Component {
     let selectedMessages = messages.filter(message => message.selected)
 
     selectedMessages.map(message => ids.push(message.id))
-    // let unRead = messages.filter(message => message.read === false)
-    // this.setState({messages: messages, readCount: unRead.length})
     update([...ids], "read", "read", value)
   }
 
@@ -187,7 +193,6 @@ class App extends Component {
     let selectedMessages = messages.filter(selectedMessage => selectedMessage.selected)
 
     selectedMessages.map(message => ids.push(message.id))
-    console.log(value)
     update([...ids], "addLabel", "label", value)
   }
 

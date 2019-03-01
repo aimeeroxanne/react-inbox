@@ -7,11 +7,15 @@ const Message = (props) => {
       <div className="col-xs-1">
         <div className="row">
           <div className="col-xs-2">
-            <input type="checkbox" checked={`${props.selected ? 'defaultChecked' : ''}`}
+            <input
+              type="checkbox"
+              checked={`${props.selected ? 'defaultChecked' : ''}`}
               onChange={() => props.select(props.id)}/>
           </div>
           <div className="col-xs-2">
-            <i className={`${props.starred ? 'star fa fa-star' : 'star fa fa-star-o'}`} value="star" onClick={() => props.star(props.id)
+            <i className={`${props.starred ? 'star fa fa-star' : 'star fa fa-star-o'}`}
+              value="star"
+              onClick={() => props.star(props.id)
             }></i>
           </div>
         </div>

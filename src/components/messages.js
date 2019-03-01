@@ -3,7 +3,7 @@ import Message from './message.js'
 import MessageBody from './messageBody.js'
 
 const Messages = (props) => {
-
+  
   return (
     <div>
       {props.messages.map(item =>

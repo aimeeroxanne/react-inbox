@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 
 const Toolbar = (props) => {
   return (
@@ -34,7 +34,7 @@ const Toolbar = (props) => {
             <option value="gschool">gschool</option>
           </select>
 
-          <select className="form-control label-select" onChange={(e)=>{props.removeLabel(e); e.target.selectedIndex = 0}}>
+          <select className="form-control label-select"     onChange={(e)=>{props.removeLabel(e); e.target.selectedIndex = 0}}>
             <option>Remove label</option>
             <option value="dev">dev</option>
             <option value="personal">personal</option>

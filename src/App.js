@@ -10,10 +10,10 @@ class App extends Component {
     super(props)
     this.state = {
       messages : [],
+      showCompose: false,
       allSelected: false,
       someSelected: false,
-      readCount: 4,
-      showCompose: false
+      readCount: 0 
     }
   }
 
@@ -22,28 +22,37 @@ class App extends Component {
     let json = await response.json()
     let selected = json.filter(message => message.selected)
     let unRead = json.filter(message => !message.read)
-    if(selected.length === 0){
-      this.setState({messages: json, allSelected: false, someSelected: false, readCount: unRead.length})
+
+    if(!selected.length){
+      this.setState({
+        messages: json,
+        allSelected: false,
+        someSelected: false,
+        readCount: unRead.length})
     }
-    else if(selected.length >= 1){
-      this.setState({messages: json, allSelected: false, someSelected: true, readCount: unRead.length})
+
+    else if(selected.length === json.length){
+      this.setState({
+        allSelected: true,
+        someSelected: true,
+        readCount: unRead.length})
     }
-    if(selected.length === json.length){
-      this.setState({allSelected: true, someSelected: true, readCount: unRead.length})
+    else {
+      this.setState({
+        messages: json,
+        allSelected: false,
+        someSelected: true,
+        readCount: unRead.length})
     }
   }
 
   showCompose = () => {
-    if(this.state.showCompose){
-      this.setState({showCompose: false})
-    }
-    else {
-      this.setState({showCompose: true})
-    }
+    this.setState({showCompose: !this.state.showCompose})
   }
 
   compose = (e) => {
     this.setState({[e.target.name]:e.target.value})
+    console.log(this.state.subject)
   }
 
   send = async (e) => {
@@ -59,7 +68,7 @@ class App extends Component {
       body: JSON.stringify(newMessage),
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Accept': 'application/json'
       }
     })
 
@@ -83,94 +92,77 @@ class App extends Component {
         'Accept': 'application/json',
       }
     })
+
     let updatedMessages = await updateMessages.json()
     let unRead = updatedMessages.filter(message => !message.read)
     let selectedMessages = updatedMessages.filter(message => message.selected)
 
-    if(selectedMessages.length === 0){
-      this.setState({messages: updatedMessages, readCount: unRead.length, allSelected: false, someSelected: false})
+    if(!selectedMessages.length){
+      this.setState({
+        messages: updatedMessages,
+        readCount: unRead.length,
+        allSelected: false,
+        someSelected: false})
     }
-    else if (selectedMessages.length > 0 && selectedMessages.length < updatedMessages.length){
-      this.setState({messages: updatedMessages, readCount: unRead.length, allSelected: false, someSelected: true})
+    else if (selectedMessages.length < updatedMessages.length){
+      this.setState({
+        messages: updatedMessages,
+        readCount: unRead.length,
+        allSelected: false,
+        someSelected: true})
     }
-    else{this.setState({messages: updatedMessages, readCount: unRead.length, allSelected: true, someSelected: true})}
+    else{this.setState({
+      messages: updatedMessages,
+      readCount: unRead.length,
+      allSelected: true,
+      someSelected: true})}
 
-  }
-
-  expandMessage = (id) => {
-    console.log(id)
   }
 
   star = (id) => {
-    let update = this.update
-    let messages = this.state.messages
-    let selectedMessage = messages.filter(message => message.id === id)
-    let value
-
-    if(selectedMessage.starred === true){
-      value = false
-    } else {value = true}
-
-    update([id], "star", "starred", value)
+    this.update([id], "star", "starred")
   }
 
   select = (id) => {
-    let update = this.update
-    let messages = this.state.messages
-    let selectedMessage = messages.filter(message => message.id === id)
-    let value
-
-    if(selectedMessage.selected === true){
-      value = false
-    } else {value = true}
-
-    update([id], "select", "selected", value)
+    this.update([id], "select", "selected")
   }
 
   selectAll = (e) => {
-    let update = this.update
     let messages = this.state.messages
     let notSelected = messages.filter(message => !message.selected)
     let selected = messages.filter(message => message.selected)
     let ids = []
-    let value = true
 
-    if(this.state.allSelected === false){
+    if(!this.state.allSelected){
       notSelected.map(message => ids.push(message.id))
-        // this.setState({allSelected: true, someSelected: true})
     }
-
     else {
       selected.map(message => ids.push(message.id))
-      // this.setState({allSelected: false, someSelected: false})
     }
 
-    update([...ids], "select", "selected", value)
-
+    this.update([...ids], "select", "selected", true)
   }
 
   read = () => {
     let update = this.update
     let messages = this.state.messages
     let ids = []
-    let value = true
     let selectedMessages = messages.filter(message => message.selected)
 
     selectedMessages.map(message => ids.push(message.id))
     // let unRead = messages.filter(message => message.read === false)
     // this.setState({messages: messages, readCount: unRead.length})
-    update([...ids], "read", "read", value)
+    update([...ids], "read", "read", true)
   }
 
   unread = () => {
     let update = this.update
     let messages = this.state.messages
     let ids = []
-    let value = false
     let selectedMessages = messages.filter(message => message.selected)
 
     selectedMessages.map(message => ids.push(message.id))
-    update([...ids], "read", "read", value)
+    update([...ids], "read", "read", false)
   }
 
   delete = () => {
@@ -209,6 +201,7 @@ class App extends Component {
   }
 
   render() {
+    
     return (
       <div className="container">
         <Toolbar
@@ -223,14 +216,16 @@ class App extends Component {
           addLabel={this.addLabel}
           removeLabel={this.removeLabel}
           update={this.update}/>
+
         {this.state.showCompose ? <ComposeForm compose={this.compose} send={this.send}/> : <div></div>}
+       
         <Messages
-        read={this.isRead}
-        messages={this.state.messages}
-        select={this.select}
-        star={this.star}
-        expandMessage={this.expandMessage}
-        update={this.update}
+          read={this.isRead}
+          messages={this.state.messages}
+          select={this.select}
+          star={this.star}
+          expandMessage={this.expandMessage}
+          update={this.update}
         />
       </div>
     )
